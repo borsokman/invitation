@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ky">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Келүүчүлөр</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lobster&family=Cormorant+Garamond:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .login { display: flex; gap: 8px; margin-top: 8px; }
+    .login input { flex: 1; min-width: 0; font: inherit; padding: 10px 12px; border: 1px solid #d8c7b0; border-radius: 10px; background: var(--cream); }
+    [hidden] { display: none !important; }
+    .login .btn { flex: none; padding: 10px 18px; }
+    .counts { display: flex; justify-content: center; gap: 24px; margin: 4px 0 20px; font-weight: 700; }
+    .guests h2 { font-size: 1.6rem; margin-top: 18px; }
+    .guest-list.no li { border-color: #cfc6bf; color: #8a8079; font-weight: 500; }
+    .toolbar { display: flex; justify-content: center; gap: 18px; margin-top: 22px; }
+    .toolbar button { font: inherit; font-weight: 700; color: var(--wine); background: none; border: 0; border-bottom: 1px solid var(--gold); cursor: pointer; padding: 0; }
+  </style>
+</head>
+<body>
+  <div class="bg" aria-hidden="true"><div class="bg-layer"></div><div class="bg-layer"></div></div>
+
+  <main class="card">
+    <h1>Келүүчүлөр</h1>
+    <div class="divider" aria-hidden="true">❦</div>
+
+    <form id="login" class="login" hidden>
+      <input id="key" type="password" placeholder="Купуя ачкыч" autocomplete="current-password" aria-label="Купуя ачкыч">
+      <button class="btn yes" type="submit">Кирүү</button>
+    </form>
+
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+
+    <section id="result" class="guests" hidden>
+      <div class="counts">
+        <span>Барат: <span id="yes-count" class="total">0</span></span>
+        <span>Бара албайт: <span id="no-count" class="total">0</span></span>
+      </div>
+      <h2>Барам</h2>
+      <ul id="yes-list" class="guest-list"></ul>
+      <h2>Бара албайм</h2>
+      <ul id="no-list" class="guest-list no"></ul>
+      <div class="toolbar">
+        <button type="button" id="refresh">Жаңылоо</button>
+        <button type="button" id="logout">Чыгуу</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="photos.js"></script>
+  <script src="bg.js"></script>
+  <script>
+  (function () {
+    const URL_ = (window.RSVP_URL || "").trim();
+    const STORE = "rsvp-admin-key";
+    const $ = id => document.getElementById(id);
+
+    function getKey() { try { return localStorage.getItem(STORE) || ""; } catch (e) { return ""; } }
+    function setKey(k) { try { k ? localStorage.setItem(STORE, k) : localStorage.removeItem(STORE); } catch (e) {} }
+    function setStatus(t, kind) { $("status").textContent = t; $("status").className = "status" + (kind ? " " + kind : ""); }
+
+    function fill(ul, arr) {
+      ul.innerHTML = "";
+      arr.forEach(g => { const li = document.createElement("li"); li.textContent = g.name; ul.appendChild(li); });
+    }
+    function render(guests) {
+      const yes = guests.filter(g => g.answer === "yes"), no = guests.filter(g => g.answer !== "yes");
+      $("yes-count").textContent = yes.length;
+      $("no-count").textContent = no.length;
+      fill($("yes-list"), yes);
+      fill($("no-list"), no);
+      $("login").hidden = true;
+      $("result").hidden = false;
+      setStatus("");
+    }
+    function showLogin(msg) {
+      $("result").hidden = true;
+      $("login").hidden = false;
+      setStatus(msg || "", msg ? "err" : "");
+      $("key").focus();
+    }
+
+    async function load() {
+      if (!URL_) { // demo mode: answers saved in this browser only
+        let list = [];
+        try { list = JSON.parse(localStorage.getItem("rsvp-demo-v2")) || []; } catch (e) {}
+        return render(list);
+      }
+      const key = getKey();
+      if (!key) return showLogin();
+      setStatus("Жүктөлүүдө…");
+      try {
+        const res = await fetch(URL_ + "?key=" + encodeURIComponent(key) + "&t=" + Date.now());
+        const data = await res.json();
+        if (data.error) { setKey(""); return showLogin("Ачкыч туура эмес."); }
+        render(data.guests || []);
+      } catch (e) {
+        setStatus("Тизмени жүктөй алган жокпуз.", "err");
+      }
+    }
+
+    $("login").addEventListener("submit", ev => {
+      ev.preventDefault();
+      setKey($("key").value.trim());
+      load();
+    });
+    $("refresh").addEventListener("click", load);
+    $("logout").addEventListener("click", () => { setKey(""); $("key").value = ""; showLogin(); });
+
+    load();
+  })();
+  </script>
+</body>
+</html>
