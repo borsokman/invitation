@@ -28,6 +28,12 @@ window.PHOTOS = [
   "DSC03946.JPG",
   "DSC03948.JPG",
   "DSC03949.JPG",
+  "1667687390893.jpg",
+  "1667687390921.jpg",
+  "1667687390924.jpg",
+  "1667687390928.jpg",
+  "1667687390931.jpg",
+  "1667687390935.jpg",
 ];
 
 // INDEX page background only. Remove a line (or put // in front) to hide it from the background.
